@@ -74,6 +74,8 @@ func TestLimiterAdmitterHoldsRefusedJobsUntilRecheck(t *testing.T) {
 		admitter.addRoom(2)
 		l.Recheck()
 		synctest.Wait()
+		// Concurrent workers may dispatch b and c in either order.
+		slices.Sort(dispatched)
 		if got, want := dispatched, []string{"a", "b", "c"}; !slices.Equal(got, want) {
 			t.Errorf("dispatched after recheck = %v, want %v", got, want)
 		}
