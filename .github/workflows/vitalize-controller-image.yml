@@ -1,0 +1,28 @@
+name: Vitalize controller image
+
+# Publishes the patched controller for Vitalize's OVH CI cluster, which pulls it
+# without credentials: ghcr.io/vitalizecare/agent-stack-k8s-controller:<sha>.
+on:
+  push:
+    branches: ["vitalize/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - run: go test -count=1 ./internal/controller/capacity/ ./internal/controller/limiter/
+      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
+      - name: Build and push
+        env:
+          KO_DOCKER_REPO: ghcr.io/vitalizecare/agent-stack-k8s-controller
+          VERSION: v0.53.1-vitalize-${{ github.sha }}
+        run: ko build --bare --platform linux/amd64 --tags "${GITHUB_SHA}" .
